@@ -15,7 +15,7 @@ const employeeRoutes = require('../routes/employeeRoutes');
 
 app.use('/api', visitorRoutes);
 app.use('/api', scannerRoutes);
-app.use('/', employeeRoutes);
+app.use('/api', employeeRoutes);
 
 // ⚠️ DO NOT call app.listen() in Vercel
 // Instead export the app as a serverless function
