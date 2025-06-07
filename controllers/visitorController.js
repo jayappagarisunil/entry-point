@@ -17,7 +17,7 @@ exports.createVisitor = async (req, res) => {
     name, email, phone, photo_url, invite_token,
     invited_by, whom_to_meet, type, purpose,
     expected_visit_time, department, location,
-    floor_no, gate_entry, create_credentials
+    floor_no, gate_entry, create_credentials,status
   } = req.body;
 
   // 1. Generate invite token
@@ -70,7 +70,7 @@ exports.createVisitor = async (req, res) => {
       name, email, phone, photo_url, invite_token,
       invited_by, whom_to_meet, type, purpose,
       expected_visit_time, department, location,
-      floor_no, gate_entry, create_credentials
+      floor_no, gate_entry, create_credentials,status
     }])
     .select('*');
 
