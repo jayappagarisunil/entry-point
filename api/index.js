@@ -11,9 +11,11 @@ app.use(express.json());
 // Routes
 const visitorRoutes = require('../routes/visitorRoutes');
 const scannerRoutes = require('../routes/scannerRoutes');
+const employeeRoutes = require('../routes/employeeRoutes');
 
 app.use('/api', visitorRoutes);
 app.use('/api', scannerRoutes);
+app.use('/', employeeRoutes);
 
 // ⚠️ DO NOT call app.listen() in Vercel
 // Instead export the app as a serverless function
