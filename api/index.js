@@ -43,11 +43,11 @@ app.use(express.json());
 
 const visitorRoutes = require('../routes/visitorRoutes');
 const scannerRoutes = require('../routes/scannerRoutes');
-const employeeRoutes = require('../routes/employeeRoutes');
+// const employeeRoutes = require('../routes/employeeRoutes');
 
 app.use('/', visitorRoutes);
 app.use('/', scannerRoutes);
-app.use('/', employeeRoutes);
+// app.use('/', employeeRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API is running 🚀' });
