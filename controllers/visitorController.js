@@ -17,7 +17,8 @@ exports.createVisitor = async (req, res) => {
     name, email, phone, photo_url, invite_token,
     invited_by, whom_to_meet, type, purpose,
     expected_visit_time, department, location,
-    floor_no, gate_entry, create_credentials,status
+    floor_no, gate_entry, create_credentials, status,
+    
   } = req.body;
 
   // 1. Generate invite token
@@ -25,7 +26,36 @@ exports.createVisitor = async (req, res) => {
     invite_token = generateShortToken();
   }
 
-  // 2. Generate QR code
+  // 2. Upload visitor photo if provided
+  if (req.file) {
+    try {
+      const photoBuffer = req.file.buffer;
+      const photoFileName = `visitor_${Date.now()}_${Math.floor(Math.random() * 1000)}.png`;
+
+      const { error: photoUploadError } = await supabase
+        .storage
+        .from('visitor-photo')
+        .upload(photoFileName, photoBuffer, {
+          contentType: req.file.mimetype,
+          upsert: true,
+        });
+
+      if (photoUploadError) {
+        console.error('Visitor Photo Upload Error:', photoUploadError);
+      } else {
+        const { data: photoUrlData } = supabase
+          .storage
+          .from('visitor-photo')
+          .getPublicUrl(photoFileName);
+
+        photo_url = photoUrlData.publicUrl;
+      }
+    } catch (err) {
+      console.error('Photo processing failed:', err);
+    }
+  }
+
+  // 3. Generate QR code
   let qrCodeImage;
   try {
     qrCodeImage = await QRCode.toDataURL(invite_token, {
@@ -37,7 +67,7 @@ exports.createVisitor = async (req, res) => {
     return res.status(500).json({ error: 'Failed to generate QR code' });
   }
 
-  // 3. Convert base64 to buffer and upload to Supabase Storage
+  // 4. Convert base64 to buffer and upload to Supabase Storage
   const base64Data = qrCodeImage.replace(/^data:image\/png;base64,/, '');
   const buffer = Buffer.from(base64Data, 'base64');
   const fileName = `qr_${invite_token}.png`;
@@ -55,7 +85,7 @@ exports.createVisitor = async (req, res) => {
     return res.status(500).json({ error: 'Failed to upload QR code to storage' });
   }
 
-  // 4. Get public URL
+  // 5. Get public URL
   const { data: publicUrlData } = supabase
     .storage
     .from('visitor-qrcodes')
@@ -63,14 +93,14 @@ exports.createVisitor = async (req, res) => {
 
   const qrCodePublicUrl = publicUrlData.publicUrl;
 
-  // 5. Insert visitor into Supabase
+  // 6. Insert visitor into Supabase
   const { data, error } = await supabase
     .from('visitors')
     .insert([{
       name, email, phone, photo_url, invite_token,
       invited_by, whom_to_meet, type, purpose,
       expected_visit_time, department, location,
-      floor_no, gate_entry, create_credentials,status
+      floor_no, gate_entry, create_credentials, status
     }])
     .select('*');
 
@@ -79,7 +109,7 @@ exports.createVisitor = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 
-  // 6. Send email with QR code image
+  // 7. Send email with QR code image
   if (email) {
     try {
       const imgSrc = photo_url && photo_url.trim() !== ''
@@ -109,6 +139,8 @@ exports.createVisitor = async (req, res) => {
               <p style="font-size: 12px; color: #777; margin-top: 10px;">Show this code to security at the gate.</p>
             </div>
 
+            
+
             <hr style="margin: 20px 0;" />
             <p style="font-size: 13px; color: #999;">EntryPoint Visitor Management System</p>
           </div>
@@ -122,7 +154,7 @@ exports.createVisitor = async (req, res) => {
     }
   }
 
-  // 7. Final response
+  // 8. Final response
   res.status(201).json({
     message: 'Visitor created successfully',
     data,
