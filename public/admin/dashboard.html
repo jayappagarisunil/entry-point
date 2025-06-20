@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Super Admin Dashboard</title>
+  <script>
+    // ✅ Auth Guard - Redirect if not logged in
+    if (!localStorage.getItem('admin_token')) {
+      window.location.href = '/admin/login.html';
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: #2c3e50;
+      color: white;
+      padding: 20px 0;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 12px 20px;
+      color: white;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #34495e;
+    }
+
+    .main {
+      flex-grow: 1;
+      padding: 30px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .cards {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    #chart-container {
+      width: 300px;
+      height: 200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ccc;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    .active {
+      color: green;
+      font-weight: bold;
+    }
+
+    .inactive {
+      color: red;
+      font-weight: bold;
+    }
+
+    button {
+      padding: 6px 10px;
+      border: none;
+      background-color: #3498db;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .create-btn {
+      float: right;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .cards {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h2>Super Admin</h2>
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Tenants</a>
+      <a href="#">Users</a>
+    </div>
+    <div class="main">
+      <h2>Super Admin Dashboard</h2>
+
+      <div class="cards">
+        <div class="card" style="flex: 1">
+          <h4>Monthly Subscribers</h4>
+          <p id="subscriber-count">Loading...</p>
+        </div>
+        <div class="card" id="chart-container">
+          <canvas id="userPieChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Tenants</h3>
+        <a href="/admin/create.html" class="create-btn" style="text-decoration: none;">
+          <button type="button">+ Create Subscriber</button>
+        </a>
+
+        <div id="tenant-table-container">
+          <p>Loading tenants...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchTenants() {
+      const res = await fetch('/api/platform/tenants');
+      const data = await res.json();
+
+      if (!res.ok) {
+        document.getElementById('tenant-table-container').innerHTML = `<p>Error: ${data.error}</p>`;
+        return;
+      }
+
+      const tenants = data.tenants;
+      const subscriberCount = tenants.length;
+      document.getElementById('subscriber-count').textContent = subscriberCount;
+
+      // Pie chart data
+      const activeCount = tenants.filter(t => t.is_active).length;
+      const inactiveCount = subscriberCount - activeCount;
+      updateChart(activeCount, inactiveCount);
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Plan</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      tenants.forEach(t => {
+        const status = t.is_active ? `<span class="active">Active</span>` : `<span class="inactive">Inactive</span>`;
+        html += `
+          <tr>
+            <td>${t.name}</td>
+            <td>${t.email || '-'}</td>
+            <td>${t.subscription_plan}</td>
+            <td>${t.subscription_start || '-'}</td>
+            <td>${t.subscription_end || '-'}</td>
+            <td>${status}</td>
+            <td>
+              ${t.is_active
+                ? `<button onclick="toggleTenant('${t.id}', false)">Deactivate</button>`
+                : `<button onclick="toggleTenant('${t.id}', true)">Activate</button>`
+              }
+            </td>
+          </tr>
+        `;
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('tenant-table-container').innerHTML = html;
+    }
+
+    function updateChart(active, inactive) {
+      const ctx = document.getElementById('userPieChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Active', 'Inactive'],
+          datasets: [{
+            data: [active, inactive],
+            backgroundColor: ['#2ecc71', '#e74c3c']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    }
+
+    async function toggleTenant(id, activate) {
+      const res = await fetch(`/api/platform/tenant/${id}/${activate ? 'activate' : 'deactivate'}`, {
+        method: 'POST'
+      });
+      const result = await res.json();
+      alert(result.message || result.error);
+      fetchTenants(); // Refresh
+    }
+
+    // Load on start
+    fetchTenants();
+  </script>
+</body>
+</html>
