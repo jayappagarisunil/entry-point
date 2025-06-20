@@ -96,6 +96,8 @@ exports.getPendingApprovals = async (req, res) => {
   res.status(200).json(data);
 };
 
+const pushService = require('../services/pushService');
+
 exports.updateApprovalDecision = async (req, res) => {
   const { id } = req.params;
   const { decision } = req.body;
@@ -104,15 +106,33 @@ exports.updateApprovalDecision = async (req, res) => {
     return res.status(400).json({ error: 'Invalid decision' });
   }
 
-  const { error } = await supabase
+  // Update visitor status
+  const { data: updated, error } = await supabase
     .from('visitors')
     .update({ status: decision })
-    .eq('id', id);
+    .eq('id', id)
+    .select()
+    .single();
 
   if (error) return res.status(500).json({ error: error.message });
 
-  return res.status(200).json({ message: `Alert marked as ${decision}` });
+  // Get the security user who requested
+  const { requested_by, name } = updated;
+  const title = `Visitor ${decision === 'approved' ? 'Approved' : 'Rejected'}`;
+  const body = `Your request for ${name} has been ${decision}.`;
+
+  // ✅ Send push notification
+  await pushService.sendPushNotificationWithActions({
+    receiverId: requested_by,
+    title,
+    body,
+    action_type: 'approval_status',
+    data: { visitor_id: id, status: decision },
+  });
+
+  return res.status(200).json({ message: `Visitor ${decision}` });
 };
+
 
 
 
