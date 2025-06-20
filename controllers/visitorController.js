@@ -161,3 +161,106 @@ exports.createVisitor = async (req, res) => {
     qr_url: qrCodePublicUrl
   });
 };
+
+
+
+
+
+
+
+
+const { sendPushNotificationWithActions } = require('../services/pushService');
+
+exports.createVisitorBySecurity = async (req, res) => {
+  console.log("Security Visitor Entry:", req.body);
+
+  let {
+    name, phone, whom_to_meet,
+    purpose, expected_visit_time, department,
+    location, floor_no, gate_entry,requested_by,invited_by
+  } = req.body;
+
+  const invite_token = generateShortToken();
+  let photo_url = null;
+
+  // 1. Upload visitor photo (if present)
+  if (req.file) {
+    try {
+      const buffer = req.file.buffer;
+      const fileName = `visitor_${Date.now()}_${Math.floor(Math.random() * 1000)}.png`;
+
+      const { error: uploadError } = await supabase
+        .storage
+        .from('visitor-photo')
+        .upload(fileName, buffer, {
+          contentType: req.file.mimetype,
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: photoData } = supabase
+          .storage
+          .from('visitor-photo')
+          .getPublicUrl(fileName);
+        photo_url = photoData?.publicUrl;
+      }
+    } catch (err) {
+      console.error('Photo upload failed:', err);
+    }
+  }
+
+  // 2. Insert visitor with 'pending' status
+  const status = 'pending';
+  const type  = 'uninvited';
+
+  const { data, error } = await supabase
+    .from('visitors')
+    .insert([{
+      name,
+      phone,
+      whom_to_meet,
+  
+      purpose,
+      expected_visit_time,
+      department,
+      location,
+      floor_no,
+      gate_entry,
+      invite_token,
+      status,
+      type,
+      invited_by,
+      requested_by,
+      photo_url
+    }])
+    .select('*');
+
+  if (error) {
+    console.error("Insert error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+
+  // 3. Send push notification to whom_to_meet
+  try {
+    await sendPushNotificationWithActions({
+      receiverId: whom_to_meet,
+      title: 'Visitor Approval Needed',
+      body: `${name} is waiting at the gate.`,
+      action_type: 'visitor_approval',
+      data: {
+        visitor_id: data[0].id,
+        invite_token,
+        photo_url,
+        status: 'pending' // ✅ Important for frontend logic
+      }
+    });
+  } catch (err) {
+    console.error('Push notification failed:', err);
+  }
+
+  // 4. Respond to frontend
+  res.status(201).json({
+    message: 'Visitor created by security. Awaiting approval.',
+    data: data[0]
+  });
+};

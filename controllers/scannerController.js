@@ -23,7 +23,7 @@ exports.verifyQRToken = async (req, res) => {
       .single();
 
     if (visitorError || !visitor) {
-      return res.status(404).json({
+      return res.status(200).json({
         status: 'not_found',
         message: 'Visitor not found. Please contact admin.',
       });
@@ -49,6 +49,24 @@ exports.verifyQRToken = async (req, res) => {
       whom_to_meet: whomToMeetName,
     };
 
+    // ✅ Check for expiration window
+    if (visitor.expected_visit_time) {
+      const now = new Date();
+      const expectedTime = new Date(visitor.expected_visit_time);
+      const grace = typeof visitor.grace_time === 'number' ? visitor.grace_time : 30;
+
+      const startTime = new Date(expectedTime.getTime() - grace * 60000);
+      const endTime = new Date(expectedTime.getTime() + grace * 60000);
+
+      if (now < startTime || now > endTime) {
+        return res.status(200).json({
+          status: 'expired',
+          message: 'QR Code has expired. Please request a new one.',
+          visitor: visitorDetails,
+        });
+      }
+    }
+
     switch (visitor.status) {
       case 'pending':
         return res.json({
@@ -58,6 +76,38 @@ exports.verifyQRToken = async (req, res) => {
         });
 
       case 'approved': {
+        // Fetch last log by entry_time to determine direction and check interval
+        const { data: lastLog, error: lastLogError } = await supabase
+          .from('entry_logs')
+          .select('entry_time, direction')
+          .eq('visitor_id', visitor.id)
+          .order('entry_time', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (lastLogError) {
+          console.error('Error fetching last log:', lastLogError);
+        }
+
+        const now = new Date();
+        let newDirection = 'in'; // default direction
+
+        if (lastLog && lastLog.entry_time) {
+          const lastTime = new Date(lastLog.entry_time);
+          const timeDiff = (now - lastTime) / 1000; // in seconds
+
+          if (timeDiff < 60) {
+            return res.status(200).json({
+              status: 'duplicate',
+              message: 'Please wait at least 1 minute before scanning again.',
+              visitor: visitorDetails,
+            });
+          }
+
+          newDirection = lastLog.direction === 'in' ? 'out' : 'in';
+        }
+
+        // Insert new log with direction and photo_url
         const { error: logError } = await supabase
           .from('entry_logs')
           .insert([{
@@ -65,7 +115,9 @@ exports.verifyQRToken = async (req, res) => {
             security_id: security_id || null,
             entry_gate: entry_gate || null,
             location: visitor.location || null,
-            remarks: 'Entry granted by security scan',
+            direction: newDirection,
+            photo_url: visitor.photo_url || null,
+            remarks: `Entry ${newDirection} by security scan`,
           }]);
 
         if (logError) {
@@ -82,6 +134,7 @@ exports.verifyQRToken = async (req, res) => {
         return res.json({
           status: 'approved',
           message: randomMessage,
+          direction: newDirection,
           visitor: visitorDetails,
         });
       }
