@@ -1,5 +1,5 @@
 const supabase = require('../services/supabaseClient');
-
+const pushService = require('../services/pushService');
 
 // Fetch all alerts for a user
 exports.getAlertsByUser = async (req, res) => {
@@ -96,7 +96,7 @@ exports.getPendingApprovals = async (req, res) => {
   res.status(200).json(data);
 };
 
-const pushService = require('../services/pushService');
+
 
 exports.updateApprovalDecision = async (req, res) => {
   const { id } = req.params;
@@ -106,7 +106,7 @@ exports.updateApprovalDecision = async (req, res) => {
     return res.status(400).json({ error: 'Invalid decision' });
   }
 
-  // Update visitor status
+  // 1. Update visitor status and return full updated record
   const { data: updated, error } = await supabase
     .from('visitors')
     .update({ status: decision })
@@ -116,23 +116,44 @@ exports.updateApprovalDecision = async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
 
-  // Get the security user who requested
-  const { requested_by, name } = updated;
+  const { requested_by, name, photo_url, location, tenant_id } = updated;
   const title = `Visitor ${decision === 'approved' ? 'Approved' : 'Rejected'}`;
   const body = `Your request for ${name} has been ${decision}.`;
 
-  // ✅ Send push notification
-  await pushService.sendPushNotificationWithActions({
-    receiverId: requested_by,
-    title,
-    body,
-    action_type: 'approval_status',
-    data: { visitor_id: id, status: decision },
-  });
+  // 2. Send push notification to requesting security
+  try {
+    await pushService.sendPushNotificationWithActions({
+      receiverId: requested_by,
+      title,
+      body,
+      action_type: 'approval_status',
+      data: { visitor_id: id, status: decision },
+    });
+  } catch (err) {
+    console.error('Push notification error:', err);
+  }
+
+  // 3. If approved, insert into entry_logs table
+  if (decision === 'approved') {
+    try {
+      await supabase.from('entry_logs').insert([{
+        visitor_id: id,
+        security_id: requested_by,
+        entry_gate: 'Main Gate', // default or dynamic if known
+        direction: 'in',
+        remarks: 'Auto log after approval',
+        photo_url: photo_url || null,
+        location: location || null,
+        tenant_id: tenant_id || null,
+      }]);
+    } catch (logError) {
+      console.error('Failed to insert entry log after approval:', logError);
+      // Optional: you may still respond 200 even if log fails
+    }
+  }
 
   return res.status(200).json({ message: `Visitor ${decision}` });
 };
-
 
 
 
