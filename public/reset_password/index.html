@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reset Password</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #1e3a8a;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #1e3a8a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+    p {
+      margin-top: 16px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h2>Reset Your Password</h2>
+  <input type="password" id="new-password" placeholder="Enter new password" />
+  <button onclick="resetPassword()">Update Password</button>
+  <p id="message"></p>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      'https://YOUR_SUPABASE_URL.supabase.co',  // ✅ Replace with your Supabase URL
+      'YOUR_SUPABASE_ANON_KEY'                  // ✅ Replace with your public anon key
+    );
+
+    const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+    const access_token = urlParams.get('access_token');
+    const refresh_token = urlParams.get('refresh_token');
+
+    if (access_token && refresh_token) {
+      supabase.auth.setSession({ access_token, refresh_token });
+    } else {
+      document.getElementById('message').innerText = 'Invalid or expired reset link.';
+    }
+
+    async function resetPassword() {
+      const newPassword = document.getElementById('new-password').value;
+      const messageEl = document.getElementById('message');
+
+      if (!newPassword || newPassword.length < 6) {
+        messageEl.innerText = 'Password must be at least 6 characters.';
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        messageEl.innerText = error.message;
+      } else {
+        messageEl.innerText = '✅ Password updated successfully. You can now log in.';
+      }
+    }
+  </script>
+</body>
+</html>
