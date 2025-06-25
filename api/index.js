@@ -63,6 +63,9 @@ const userProfileRoutes = require('../routes/UserProfileRoutes');
 const alertRoutes = require('../routes/alertRoutes');
 const userRoutes = require('../routes/userRoutes');
 const platformRoutes = require('../routes/platformRoutes');
+// const mailRoutes = require('../routes/mailRoutes');
+
+
 
 // ✅ Use routes
 app.use('/api', tenantRoutes);
@@ -76,6 +79,7 @@ app.use('/api', userProfileRoutes);
 app.use('/api', alertRoutes);
 app.use('/api', userRoutes);
 app.use('/api/platform', platformRoutes);
+// app.use('/api', mailRoutes);
 
 // ✅ Root route
 app.get('/', (req, res) => {
