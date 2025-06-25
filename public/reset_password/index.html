@@ -49,9 +49,10 @@
   <p id="message"></p>
 
   <script>
-    const supabase = supabase.createClient(
+    // ✅ Initialize Supabase correctly
+    const supabase = window.supabase.createClient(
       'https://eibmkyxkpfhytjbkrvxc.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpYm1reXhrcGZoeXRqYmtydnhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMTY2MTgsImV4cCI6MjA2NDU5MjYxOH0.w5RA3A-8dmQdOKq16FtVf4U67LEbyOCmk9nMPQVj-0w'
+      'YOUR_ANON_KEY'  // replace with your real anon key
     );
 
     const resetBtn = document.getElementById('reset-btn');
@@ -66,9 +67,9 @@
         const { error } = await supabase.auth.setSession({ access_token, refresh_token });
 
         if (error) {
-          messageEl.innerText = '⚠️ Failed to restore session.';
+          messageEl.innerText = '⚠️ Session error: ' + error.message;
         } else {
-          resetBtn.disabled = false; // ✅ Enable button only after session is active
+          resetBtn.disabled = false;
         }
       } else {
         messageEl.innerText = '❌ Invalid or expired reset link.';
@@ -88,14 +89,13 @@
       if (error) {
         messageEl.innerText = `❌ ${error.message}`;
       } else {
-        messageEl.innerText = '✅ Password updated successfully. You can now log in.';
+        messageEl.innerText = '✅ Password updated successfully.';
         document.getElementById('new-password').disabled = true;
         resetBtn.disabled = true;
       }
     }
 
     resetBtn.addEventListener('click', resetPassword);
-
     initSession();
   </script>
 </body>
