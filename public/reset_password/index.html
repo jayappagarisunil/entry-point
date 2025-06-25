@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -45,15 +45,17 @@
 <body>
   <h2>Reset Your Password</h2>
   <input type="password" id="new-password" placeholder="Enter new password" />
-  <button onclick="resetPassword()">Update Password</button>
+  <button id="reset-btn" disabled>Update Password</button>
   <p id="message"></p>
 
   <script>
-    // ✅ Replace these with your real values
     const supabase = supabase.createClient(
-      'https://eibmkyxkpfhytjbkrvxc.supabase.co', // 🔁 Your Supabase URL
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpYm1reXhrcGZoeXRqYmtydnhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMTY2MTgsImV4cCI6MjA2NDU5MjYxOH0.w5RA3A-8dmQdOKq16FtVf4U67LEbyOCmk9nMPQVj-0w'              // 🔁 Your anon public key (NOT service role)
+      'https://eibmkyxkpfhytjbkrvxc.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpYm1reXhrcGZoeXRqYmtydnhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwMTY2MTgsImV4cCI6MjA2NDU5MjYxOH0.w5RA3A-8dmQdOKq16FtVf4U67LEbyOCmk9nMPQVj-0w'
     );
+
+    const resetBtn = document.getElementById('reset-btn');
+    const messageEl = document.getElementById('message');
 
     async function initSession() {
       const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'));
@@ -62,17 +64,19 @@
 
       if (access_token && refresh_token) {
         const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+
         if (error) {
-          document.getElementById('message').innerText = '⚠️ Failed to restore session.';
+          messageEl.innerText = '⚠️ Failed to restore session.';
+        } else {
+          resetBtn.disabled = false; // ✅ Enable button only after session is active
         }
       } else {
-        document.getElementById('message').innerText = '❌ Invalid or expired reset link.';
+        messageEl.innerText = '❌ Invalid or expired reset link.';
       }
     }
 
     async function resetPassword() {
       const newPassword = document.getElementById('new-password').value;
-      const messageEl = document.getElementById('message');
 
       if (!newPassword || newPassword.length < 6) {
         messageEl.innerText = '⚠️ Password must be at least 6 characters.';
@@ -86,8 +90,11 @@
       } else {
         messageEl.innerText = '✅ Password updated successfully. You can now log in.';
         document.getElementById('new-password').disabled = true;
+        resetBtn.disabled = true;
       }
     }
+
+    resetBtn.addEventListener('click', resetPassword);
 
     initSession();
   </script>
