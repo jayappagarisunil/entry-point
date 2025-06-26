@@ -82,7 +82,7 @@ $(document).ready(function () {
 
 
 
-ocument.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
   const contactForm = document.getElementById('contact-form');
   if (!contactForm) return;
 
