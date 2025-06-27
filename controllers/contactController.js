@@ -41,7 +41,7 @@ const handleContactRequest = async (req, res) => {
 
     // Send Telegram message
     await sendTelegramMessage(
-      `📩 *New Contact Request*\n\n👤 *Name:* ${name}\n📧 *Email:* ${email}\n *phone no :*${phone}\n *State :*${state}\n 💬 *Message:* ${message}`
+      `📩 *New Contact Request*\n\n👤 *Name:* ${name}\n📧 *Email:* ${email}\n📱 *phone no :*${phone}\n📍 *State :*${state}\n 💬 *Message:* ${message}`
     );
 
     return res.status(200).json({ success: true, message: 'Request submitted successfully' });
