@@ -17,7 +17,7 @@ exports.createVisitor = async (req, res) => {
     name, email, phone, photo_url, invite_token,
     invited_by, whom_to_meet, type, purpose,
     expected_visit_time, department, location,
-    floor_no, gate_entry, create_credentials, status,
+    floor_no, gate_entry, create_credentials, status,tenant_id,
     
   } = req.body;
 
@@ -100,7 +100,7 @@ exports.createVisitor = async (req, res) => {
       name, email, phone, photo_url, invite_token,
       invited_by, whom_to_meet, type, purpose,
       expected_visit_time, department, location,
-      floor_no, gate_entry, create_credentials, status
+      floor_no, gate_entry, create_credentials, status,tenant_id
     }])
     .select('*');
 
@@ -177,7 +177,7 @@ exports.createVisitorBySecurity = async (req, res) => {
   let {
     name, phone, whom_to_meet,
     purpose, expected_visit_time, department,
-    location, floor_no, gate_entry,requested_by,invited_by
+    location, floor_no, gate_entry,requested_by,invited_by,tenant_id
   } = req.body;
 
   const invite_token = generateShortToken();
@@ -231,7 +231,9 @@ exports.createVisitorBySecurity = async (req, res) => {
       type,
       invited_by,
       requested_by,
-      photo_url
+      photo_url,
+      tenant_id
+
     }])
     .select('*');
 
