@@ -1,14 +1,16 @@
+// routes/chatRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
 
-// Chat-related routes
-router.get('/chat/list', chatController.getRecentChats);
-router.post('/chat/send', chatController.sendMessage);
-router.get('/chat/history', chatController.getMessages);
-router.put('/chat/seen', chatController.markMessagesAsSeen);
+// GET /api/chats/list/:user_id/:tenant_id
+router.get('/list/:user_id/:tenant_id', chatController.getChatList);
 
-// User-related route
-router.get('/users/list', chatController.getAllUsers); // shows all users except the logged-in user
+// Get chat history with user details
+router.get('/history/:userId/:otherUserId/:tenantId', chatController.getChatHistory);
+
+// // Send a new message
+router.post('/chat/send', chatController.sendMessage); 
 
 module.exports = router;
