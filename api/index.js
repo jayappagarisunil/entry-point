@@ -65,6 +65,7 @@ const userRoutes = require('../routes/userRoutes');
 const platformRoutes = require('../routes/platformRoutes');
 // const mailRoutes = require('../routes/mailRoutes');
 const contactRoutes = require('../routes/contactRoutes');
+const reportRoutes = require('../routes/reportRoutes');
 
 
 
@@ -82,6 +83,7 @@ app.use('/api', userRoutes);
 app.use('/api/platform', platformRoutes);
 // app.use('/api', mailRoutes);
 app.use('/api', contactRoutes);
+app.use('/api/reports', reportRoutes);
 
 // ✅ Root route
 app.get('/', (req, res) => {
