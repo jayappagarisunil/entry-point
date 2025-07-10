@@ -92,6 +92,9 @@ exports.getChatHistory = async (req, res) => {
   }
 };
 
+
+const { sendPushNotificationWithActions } = require('../services/pushService');
+
 exports.sendMessage = async (req, res) => {
   const { sender_id, receiver_id, tenant_id, message } = req.body;
 
@@ -100,6 +103,7 @@ exports.sendMessage = async (req, res) => {
   }
 
   try {
+    // 1. Insert the message into the messages table
     const { data, error } = await supabase
       .from('messages')
       .insert([
@@ -118,6 +122,28 @@ exports.sendMessage = async (req, res) => {
       console.error('Error inserting message:', error);
       return res.status(500).json({ error: 'Failed to send message.' });
     }
+
+    // 2. Fetch sender name (optional, but nice for notification title)
+    const { data: senderData, error: senderError } = await supabase
+      .from('users')
+      .select('name')
+      .eq('id', sender_id)
+      .single();
+
+    const senderName = senderData?.name || 'Someone';
+
+    // 3. Send push notification using existing service
+    await sendPushNotificationWithActions({
+      receiverId: receiver_id,
+      title: `New message from ${senderName}`,
+      body: message,
+      action_type: 'chat_message',
+      data: {
+        from_user_id: sender_id,
+        tenant_id,
+        message_id: data.id,
+      },
+    });
 
     return res.status(200).json({ success: true, message: data });
   } catch (err) {
