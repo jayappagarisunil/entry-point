@@ -127,7 +127,12 @@ exports.updateApprovalDecision = async (req, res) => {
       title,
       body,
       action_type: 'approval_status',
-      data: { visitor_id: id, status: decision },
+      data: { 
+        visitor_id: id, 
+        status: decision,
+        navigateTo: "SecurityAlerts",
+        tab: "approvals"
+      },
     });
   } catch (err) {
     console.error('Push notification error:', err);
