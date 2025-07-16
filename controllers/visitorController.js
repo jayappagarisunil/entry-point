@@ -253,7 +253,9 @@ exports.createVisitorBySecurity = async (req, res) => {
         visitor_id: data[0].id,
         invite_token,
         photo_url,
-        status: 'pending' // ✅ Important for frontend logic
+        status: 'pending' ,// ✅ Important for frontend logic
+        navigateTo: "AuthorizedAlerts",
+        tab: "approvals"
       }
     });
   } catch (err) {
