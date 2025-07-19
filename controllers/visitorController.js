@@ -17,7 +17,7 @@ exports.createVisitor = async (req, res) => {
     name, email, phone, photo_url, invite_token,
     invited_by, whom_to_meet, type, purpose,
     expected_visit_time, department, location,
-    floor_no, gate_entry, create_credentials, status,tenant_id,
+    floor_no, gate_entry, create_credentials, status,
     
   } = req.body;
 
@@ -100,7 +100,7 @@ exports.createVisitor = async (req, res) => {
       name, email, phone, photo_url, invite_token,
       invited_by, whom_to_meet, type, purpose,
       expected_visit_time, department, location,
-      floor_no, gate_entry, create_credentials, status,tenant_id
+      floor_no, gate_entry, create_credentials, status
     }])
     .select('*');
 
@@ -177,7 +177,8 @@ exports.createVisitorBySecurity = async (req, res) => {
   let {
     name, phone, whom_to_meet,
     purpose, expected_visit_time, department,
-    location, floor_no, gate_entry,requested_by,invited_by,tenant_id
+    location, floor_no, gate_entry,requested_by,invited_by,
+    coming_from,is_having_vehicle,vehicle_type,vehicle_number,parking_at
   } = req.body;
 
   const invite_token = generateShortToken();
@@ -232,7 +233,11 @@ exports.createVisitorBySecurity = async (req, res) => {
       invited_by,
       requested_by,
       photo_url,
-      tenant_id
+      coming_from,
+      is_having_vehicle,
+      vehicle_type,
+      vehicle_number,
+      parking_at
 
     }])
     .select('*');
@@ -253,7 +258,7 @@ exports.createVisitorBySecurity = async (req, res) => {
         visitor_id: data[0].id,
         invite_token,
         photo_url,
-        status: 'pending' ,// ✅ Important for frontend logic
+        status: 'pending', // ✅ Important for frontend logic
         navigateTo: "AuthorizedAlerts",
         tab: "approvals"
       }
