@@ -3,8 +3,7 @@
     { "source": "/api/:path*", "destination": "/api/index.js" },
     { "source": "/", "destination": "/website/index.html" },
     { "source": "/sitemap.xml", "destination": "/website/sitemap.xml" },
-    { "source": "/terms&conditions", "destination": "/website/terms&conditions.html" },
-    { "source": "/Privacy-policy", "destination": "/website/privicy-policy.html" }
-
+    { "source": "/terms-and-conditions", "destination": "/website/terms-and-conditions.html" },
+    { "source": "/privacy-policy", "destination": "/website/privacy-policy.html" }
   ]
 }
